@@ -123,7 +123,9 @@ public:
     QLocale::Country m_country;
     QFileInfo m_fileInfo;
     RCCFileInfo *m_parent;
-    QHash<QString, RCCFileInfo*> m_children;
+    // use a QMap to get a stable ordering of children
+    // so that the generated files don't change every build
+    QMap<QString, RCCFileInfo*> m_children;
     int m_compressLevel;
     int m_compressThreshold;
 
@@ -679,7 +681,7 @@ QStringList RCCResourceLibrary::dataFiles() const
     pending.push(m_root);
     while (!pending.isEmpty()) {
         RCCFileInfo *file = pending.pop();
-        for (QHash<QString, RCCFileInfo*>::iterator it = file->m_children.begin();
+        for (QMap<QString, RCCFileInfo*>::iterator it = file->m_children.begin();
             it != file->m_children.end(); ++it) {
             RCCFileInfo *child = it.value();
             if (child->m_flags & RCCFileInfo::Directory)
@@ -693,7 +695,7 @@ QStringList RCCResourceLibrary::dataFiles() const
 // Determine map of resource identifier (':/newPrefix/images/p1.png') to file via recursion
 static void resourceDataFileMapRecursion(const RCCFileInfo *m_root, const QString &path, RCCResourceLibrary::ResourceDataFileMap &m)
 {
-    typedef QHash<QString, RCCFileInfo*>::const_iterator ChildConstIterator;
+    typedef QMap<QString, RCCFileInfo*>::const_iterator ChildConstIterator;
     const QChar slash = QLatin1Char('/');
     const ChildConstIterator cend = m_root->m_children.constEnd();
     for (ChildConstIterator it = m_root->m_children.constBegin(); it != cend; ++it) {
@@ -828,7 +830,7 @@ bool RCCResourceLibrary::writeDataBlobs()
     QString errorMessage;
     while (!pending.isEmpty()) {
         RCCFileInfo *file = pending.pop();
-        for (QHash<QString, RCCFileInfo*>::iterator it = file->m_children.begin();
+        for (QMap<QString, RCCFileInfo*>::iterator it = file->m_children.begin();
             it != file->m_children.end(); ++it) {
             RCCFileInfo *child = it.value();
             if (child->m_flags & RCCFileInfo::Directory)
@@ -864,7 +866,7 @@ bool RCCResourceLibrary::writeDataNames()
     qint64 offset = 0;
     while (!pending.isEmpty()) {
         RCCFileInfo *file = pending.pop();
-        for (QHash<QString, RCCFileInfo*>::iterator it = file->m_children.begin();
+        for (QMap<QString, RCCFileInfo*>::iterator it = file->m_children.begin();
             it != file->m_children.end(); ++it) {
             RCCFileInfo *child = it.value();
             if (child->m_flags & RCCFileInfo::Directory)
